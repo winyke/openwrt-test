@@ -96,13 +96,13 @@ jobs:
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "SERVERCHAN_SCKEY=${SERVERCHAN_SCKEY}" >> $GITHUB_ENV
     
-    - name: 微信通知workflow-runs
+    - name: 微信通知
       uses: emon100/Action-Serverchan@v2
       if: env.SERVERCHAN_SCKEY == 'true' || (github.event.inputs.wxtz == 'wxtz' && github.event.inputs.wxtz  != 'false')
       with:
         SCKEY: ${{ secrets.SCKEY }}
         text: 主人${{matrix.target}}编译开始啦
-        desp: 主人您要编译的[${{ env.WXFB_MESSAGE }}]固件正在努力耕耘中,请耐心等待......
+        desp: 主人您要编译的[${{ env.WXFB_MESSAGE }}]固件正在努力耕耘中,请耐心等待......$(date "+%Y%m%d-%H%M")
     
     - name: 开始安装编译所需系统
       env:
@@ -187,9 +187,9 @@ jobs:
         echo "date1=$(date "+%Y年%m月%d号-%H点%M分")" >> $GITHUB_ENV
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
-    - name: 上传bin文件夹(固件+ipk)在github空间
+    - name: 上传bin文件夹(固件+ipk)到github空间
       uses: actions/upload-artifact@v2
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      if: steps.compile.outputs.status == 'success'
       with:
         name: OpenWrt_bin_${{matrix.target}}_${{ env.date }}
         path: openwrt/bin
@@ -200,6 +200,20 @@ jobs:
         mkdir config
         find openwrt/bin/targets/ -name "*config.buildinfo*" | xargs -i mv -f {} config
         cd openwrt/bin/targets/*/*
+
+    - name: 上传bin文件夹(固件+ipk)到「奶牛快传」和「WeTransfer」
+      if: steps.organizer.outputs.status == 'success'
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin 2>&1 | tee cowtransfer.log
+        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress openwrt/bin 2>&1 | tee wetransfer.log
+        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+
+    - name: 整理固件文件夹
+      id: organizer
+      run: |
         rm -rf packages && mkdir packages
         find -name "*buildinfo*" | xargs -i mv -f {} packages
         find -name "*sha256sums*" | xargs -i mv -f {} packages
@@ -215,22 +229,22 @@ jobs:
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=status::success"
     
-    - name: 上传.config配置文件在github空间
+    - name: 上传.config配置文件到github空间
       uses: actions/upload-artifact@v2
-      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_CONFIG == 'true'
+      if: steps.organizer.outputs.status == 'success'
       with:
         name: .config_${{matrix.target}}_${{ env.date }}
         path: ./config
 
-    - name: 上传固件在github空间
+    - name: 上传固件到github空间
       uses: actions/upload-artifact@v2
-      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+      if: steps.organizer.outputs.status == 'success'
       with:
         name: OpenWrt_firmware_${{matrix.target}}_${{ env.date }}
         path: ${{ env.FIRMWARE }}
 
     - name: 上传固件到「奶牛快传」和「WeTransfer」
-      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      if: steps.organizer.outputs.status == 'success'
       run: |
         curl -fsSL git.io/file-transfer | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
@@ -255,11 +269,11 @@ jobs:
             ☆  感谢源码作者无私分享！
             
             🎉 [ ${{ env.WXFB_MESSAGE }} ]固件下载 ✨
-            
             💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_URL }}
-            
             ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_URL }}
-            
+            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件+bin下载 ✨
+            💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}
+            ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
             🌴 链接有效期为7天，无需注册直接下载 🐤
         files: ${{ env.FIRMWARE }}/*
     
@@ -269,19 +283,11 @@ jobs:
       with:
         SCKEY: ${{ secrets.SCKEY }}
         text: 恭喜主人${{matrix.target}}固件编译成功！
-        desp: 我亲爱的主人您要编译的${{ env.WXFB_MESSAGE }}固件成功编译完成了！
-              
-              
-              完成时间：${{ env.date1 }}
-              
-              
+        desp: 完成时间：${{ env.date1 }}
               发布地址：${{ env.GITHUB_RELEASE }}
-              
-              
+              ++++++++++++++++固件++++++++++++++++++
               奶牛快传：${{ env.COWTRANSFER_URL }}
-              
-              
               WeTransfer：${{ env.WETRANSFER_URL }}
-              
-              
-              祝小主人见人爱，花见花开，车见车载，天天好心情🎈！！！
+              ++++++++++++++固件+BIN++++++++++++++++
+              奶牛快传：${{ env.COWTRANSFER_BIN_URL }}
+              WeTransfer：${{ env.WETRANSFER_BIN_URL }}
