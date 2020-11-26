@@ -195,14 +195,12 @@ jobs:
         path: openwrt/bin
 
     - name: 整理固件文件夹
-      id: organizer
       run: |
         mkdir config
         find openwrt/bin/targets/ -name "*config.buildinfo*" | xargs -i mv -f {} config
         cd openwrt/bin/targets/*/*
 
     - name: 上传bin文件夹(固件+ipk)到「奶牛快传」和「WeTransfer」
-      if: steps.organizer.outputs.status == 'success'
       run: |
         curl -fsSL git.io/file-transfer | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin 2>&1 | tee cowtransfer.log
