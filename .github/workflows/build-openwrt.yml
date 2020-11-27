@@ -252,6 +252,21 @@ jobs:
         ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
         echo "::warning file=WeTransfer（${{matrix.target}}）::$(cat wetransfer.log | grep https)"
         echo "WETRANSFER_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+    
+    - name: 微信通知
+      uses: emon100/Action-Serverchan@v2
+      if: steps.organizer.outputs.status == 'success' && env.SERVERCHAN_SCKEY == 'true' || (github.event.inputs.wxtz == 'wxtz' && github.event.inputs.wxtz  != 'false')
+      with:
+        SCKEY: ${{ secrets.SCKEY }}
+        text: 恭喜主人${{matrix.target}}固件编译成功！
+        desp: 完成时间：${{ env.date1 }}
+              发布地址：${{ env.GITHUB_RELEASE }}
+              ++++++++++++++++固件++++++++++++++++++
+              奶牛快传：${{ env.COWTRANSFER_URL }}
+              WeTransfer：${{ env.WETRANSFER_URL }}
+              ++++++++++++++固件+BIN++++++++++++++++
+              奶牛快传：${{ env.COWTRANSFER_BIN_URL }}
+              WeTransfer：${{ env.WETRANSFER_BIN_URL }}
 
     - name: 自动发布固件
       uses: softprops/action-gh-release@v1
@@ -274,18 +289,3 @@ jobs:
             ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
             🌴 链接有效期为7天，无需注册直接下载 🐤
         files: ${{ env.FIRMWARE }}/*
-    
-    - name: 微信通知
-      uses: emon100/Action-Serverchan@v2
-      if: steps.organizer.outputs.status == 'success' && env.SERVERCHAN_SCKEY == 'true' || (github.event.inputs.wxtz == 'wxtz' && github.event.inputs.wxtz  != 'false')
-      with:
-        SCKEY: ${{ secrets.SCKEY }}
-        text: 恭喜主人${{matrix.target}}固件编译成功！
-        desp: 完成时间：${{ env.date1 }}
-              发布地址：${{ env.GITHUB_RELEASE }}
-              ++++++++++++++++固件++++++++++++++++++
-              奶牛快传：${{ env.COWTRANSFER_URL }}
-              WeTransfer：${{ env.WETRANSFER_URL }}
-              ++++++++++++++固件+BIN++++++++++++++++
-              奶牛快传：${{ env.COWTRANSFER_BIN_URL }}
-              WeTransfer：${{ env.WETRANSFER_BIN_URL }}
