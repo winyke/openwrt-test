@@ -269,23 +269,3 @@ jobs:
               ++++++++++++++固件+BIN++++++++++++++++
               奶牛快传：${{ env.COWTRANSFER_BIN_URL }}
               WeTransfer：${{ env.WETRANSFER_BIN_URL }}
-
-    - name: 自动发布固件
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.REPO_TOKEN }}
-        release_name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
-        file: ${{ env.FIRMWARE }}/*
-        tag: ${{ env.date2 }}
-        body: |            
-            ☆  源码 : ${{ env.REPO_URL }}
-            ☆  分支 : ${{ env.REPO_BRANCH }}
-            ☆  感谢源码作者无私分享！
-            
-            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件下载 ✨
-            💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_URL }}
-            ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_URL }}
-            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件+bin下载 ✨
-            💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}
-            ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
-            🌴 链接有效期为7天，无需注册直接下载 🐤
