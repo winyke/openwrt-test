@@ -260,7 +260,8 @@ jobs:
       with:
         SCKEY: ${{ secrets.SCKEY }}
         text: 恭喜主人${{matrix.target}}固件编译成功！
-        desp: 完成时间：${{ env.date1 }}
+        desp: |
+              完成时间：${{ env.date1 }}
               发布地址：${{ env.GITHUB_RELEASE }}
               ++++++++++++++++固件++++++++++++++++++
               奶牛快传：${{ env.COWTRANSFER_URL }}
@@ -270,13 +271,12 @@ jobs:
               WeTransfer：${{ env.WETRANSFER_BIN_URL }}
 
     - name: 自动发布固件
-      uses: softprops/action-gh-release@v1
-      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'release' && github.event.inputs.release  != 'false')
-      env:
-        GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+      uses: svenstaro/upload-release-action@v2
       with:
-        name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
-        tag_name: ${{ env.date2 }}
+        repo_token: ${{ secrets.REPO_TOKEN }}
+        release_name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
+        file: ${{ env.FIRMWARE }}/*
+        tag: ${{ env.date2 }}
         body: |            
             ☆  源码 : ${{ env.REPO_URL }}
             ☆  分支 : ${{ env.REPO_BRANCH }}
@@ -289,4 +289,3 @@ jobs:
             💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}
             ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
             🌴 链接有效期为7天，无需注册直接下载 🐤
-        files: ${{ env.FIRMWARE }}/*
