@@ -142,6 +142,7 @@ jobs:
           /bin/bash "build/${{matrix.target}}/$DIY_P1_SH"
         fi
         git clone -b $REPO_BRANCH --single-branch https://github.com/281677160/openwrt-package package/danshui
+        git clone -b main --single-branch https://github.com/winyke/openwrt-packages package/wyk
         ./scripts/feeds clean && ./scripts/feeds update -a && ./scripts/feeds install -a && ./scripts/feeds install -a
         if [ -f "build/${{matrix.target}}/$DIY_P2_SH" ]; then
           chmod +x build/${{matrix.target}}/$DIY_P2_SH
