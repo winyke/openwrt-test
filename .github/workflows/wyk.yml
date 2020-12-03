@@ -153,7 +153,7 @@ jobs:
         popd
  
     - name: SSH远程连接服务器配置固件
-      uses: P3TERX/ssh2actions@v1.0.0
+      uses: garypang13/debugger-action@master
       if: env.SSH_ACTIONS == 'true' || (github.event.inputs.ssh == 'ssh' && github.event.inputs.ssh  != 'false')
 
     - name: 下载软件包
