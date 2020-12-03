@@ -5,8 +5,6 @@
 # Copyright (C) 2019 P3TERX <https://p3terx.com>
 # <https://github.com/P3TERX/Actions-OpenWrt.git>
 #
-
-
 name: 编译OpenWrt固件-wyk
 
 on:
@@ -92,16 +90,6 @@ jobs:
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "SERVERCHAN_SCKEY=${SERVERCHAN_SCKEY}" >> $GITHUB_ENV
         echo "wykstart=$(date "+%Y-%m-%d %H.%M")" >> $GITHUB_ENV
-    
-    - name: 微信通知
-      uses: emon100/Action-Serverchan@v2
-      if: env.SERVERCHAN_SCKEY == 'true' || (github.event.inputs.wxtz == 'wxtz' && github.event.inputs.wxtz  != 'false')
-      with:
-        SCKEY: ${{ secrets.SCKEY }}
-        text: 主人${{matrix.target}}编译开始啦
-        desp: |
-              主人您要编译的[${{ env.WXFB_MESSAGE }}]固件正在努力耕耘中,请耐心等待......
-              ${{ env.wykstart}}
     
     - name: 开始安装编译所需系统
       env:
