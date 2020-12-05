@@ -13,11 +13,11 @@ on:
       ssh:
         description: 'SSH远程'
         required: false
-        default: 'ssh actions'
+        default: 'ssh'
       release:
         description: '发布固件'
         required: false
-        default: 'release actions'
+        default: 'release'
 
 
 #定时触发开始编译(开启定时编译请先确认SSH处在关闭状态,要不然SSH没人管,会卡SSH编译失败)
@@ -203,6 +203,13 @@ jobs:
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=status::success"
+    
+    - name: 上传.config配置文件到github空间
+      uses: actions/upload-artifact@v2
+      if: steps.organizer.outputs.status == 'success'
+      with:
+        name: .config_${{matrix.target}}_${{ env.date }}
+        path: ./config
 
     - name: 上传bin文件夹(固件+ipk)压缩包到「奶牛快传」和「WeTransfer」
       if: steps.organizer.outputs.status == 'success'
@@ -211,7 +218,7 @@ jobs:
         ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/ipk.tar 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传（${{matrix.target}}）::$(cat cowtransfer.log | grep https)"
         echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
-        curl -fsSL git.io/file-transfer | sh
+        
         ./transfer wet -s -p 16 --no-progress /tmp/ipk.tar 2>&1 | tee wetransfer.log
         echo "::warning file=WeTransfer（${{matrix.target}}）::$(cat wetransfer.log | grep https)"
         echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
@@ -227,13 +234,7 @@ jobs:
               
               发布地址：${{ env.GITHUB_RELEASE }}
               
-              ++++++++++++++++固件++++++++++++++++++
-              
-              奶牛快传：${{ env.COWTRANSFER_URL }}
-              
-              WeTransfer：${{ env.WETRANSFER_URL }}
-              
-              ++++++++++++++固件+BIN++++++++++++++++
+              ++++++++++++++固件+ipk++++++++++++++++
               
               奶牛快传：${{ env.COWTRANSFER_BIN_URL }}
               
@@ -252,10 +253,7 @@ jobs:
             ☆  分支 : ${{ env.REPO_BRANCH }}
             ☆  感谢源码作者无私分享！
             
-            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件下载 ✨
-            💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_URL }}
-            ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_URL }}
-            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件+bin下载 ✨
+            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件+ipk下载 ✨
             💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}
             ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
             🌴 链接有效期为7天，无需注册直接下载 🐤
