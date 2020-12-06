@@ -18,6 +18,10 @@ on:
         description: '发布固件'
         required: false
         default: 'release'
+      kernelconfig:
+        description: '发布固件'
+        required: false
+        default: 'yes'
 
 
 #定时触发开始编译(开启定时编译请先确认SSH处在关闭状态,要不然SSH没人管,会卡SSH编译失败)
@@ -151,6 +155,12 @@ jobs:
         pushd po2lmo
         make && sudo make install
         popd
+
+    - name: 内核配置
+      if: github.event.inputs.kernelconfig == 'yes'
+      run: |
+        cd ~/work/openwrt-test/openwrt-test/openwrt
+        make kernel_menuconfig
  
     - name: SSH远程连接服务器配置固件
       uses: garypang13/debugger-action@master
