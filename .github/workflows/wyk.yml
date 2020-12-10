@@ -57,7 +57,7 @@ jobs:
 
 
     steps:
-    - name: 准备就绪
+    - name: 准备就绪[发布:${{ github.event.inputs.release }}][SSH:${{ github.event.inputs.ssh }}][配置内核:${{ github.event.inputs.kernelconfig }}]
       uses: actions/checkout@v2
     
     - name: 清理当前空间运行工作:保留最新1个(workflow-runs)
@@ -70,7 +70,7 @@ jobs:
     
     - name: 清理发布:保留最近8个(release)
       uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'release' && github.event.inputs.release  != 'false')
+      if: env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'yes' && github.event.inputs.release  != 'false')
       with:
         keep_latest: 8         #保留多少个发布不删除,最少保留一个
         delete_tags: true
@@ -256,7 +256,7 @@ jobs:
 
     - name: 自动发布固件
       uses: svenstaro/upload-release-action@v2
-      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'release' && github.event.inputs.release  != 'false')
+      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'yes' && github.event.inputs.release  != 'false')
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         release_name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
