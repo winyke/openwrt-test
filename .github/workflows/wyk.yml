@@ -58,24 +58,7 @@ jobs:
 
     steps:
     - name: 准备就绪[发布:${{ github.event.inputs.release }}][SSH:${{ github.event.inputs.ssh }}][配置内核:${{ github.event.inputs.kernelconfig }}]
-      uses: actions/checkout@v2
-    
-    - name: 清理当前空间运行工作:保留最新1个(workflow-runs)
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        token: ${{ github.token }}
-        repository: ${{ github.repository }}       
-        retain_days: 0.1
-        keep_minimum_runs: 1
-    
-    - name: 清理发布:保留最近8个(release)
-      uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'yes' && github.event.inputs.release  != 'false')
-      with:
-        keep_latest: 8         #保留多少个发布不删除,最少保留一个
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+      uses: actions/checkout@v2  
     
     - name: 引入机型设置(setting.ini)
       run: |
@@ -93,7 +76,6 @@ jobs:
         echo "UPLOAD_COWTRANSFER=${UPLOAD_COWTRANSFER}" >> $GITHUB_ENV
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "SERVERCHAN_SCKEY=${SERVERCHAN_SCKEY}" >> $GITHUB_ENV
-        echo "wykstart=$(date "+%Y-%m-%d %H.%M")" >> $GITHUB_ENV
     
     - name: 开始安装编译所需系统
       env:
@@ -111,7 +93,6 @@ jobs:
     - name: 下载${{matrix.target}}源码
       working-directory: /workdir
       run: |
-        df -hT $PWD
         git clone -b $REPO_BRANCH --single-branch $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         cd openwrt
@@ -184,6 +165,7 @@ jobs:
         echo "date=$(date "+%Y-%m-%d %H.%M")" >> $GITHUB_ENV
         echo "date1=$(date "+%Y年%m月%d号-%H点%M分")" >> $GITHUB_ENV
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
+        echo "wykbin=${{matrix.target}}$(date "+%Y%m%d-%H%M").tar" >> $GITHUB_ENV
 
     - name: 上传bin文件夹(固件+ipk)到github空间
       uses: actions/upload-artifact@v2
@@ -195,7 +177,7 @@ jobs:
     - name: 整理固件文件夹
       id: organizer
       run: |
-        tar -cf /tmp/ipk.tar openwrt/bin
+        tar -cf /tmp/${wykbin} openwrt/bin
         mkdir config
         find openwrt/bin/targets/ -name "*config.buildinfo*" | xargs -i mv -f {} config
         cd openwrt/bin/targets/*/*
@@ -225,11 +207,11 @@ jobs:
       if: steps.organizer.outputs.status == 'success'
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/ipk.tar 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/${wykbin} 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传（${{matrix.target}}）::$(cat cowtransfer.log | grep https)"
         echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
         
-        ./transfer wet -s -p 16 --no-progress /tmp/ipk.tar 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress /tmp/${wykbin} 2>&1 | tee wetransfer.log
         echo "::warning file=WeTransfer（${{matrix.target}}）::$(cat wetransfer.log | grep https)"
         echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
     
@@ -260,7 +242,7 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         release_name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
-        file: /tmp/ipk.tar
+        file: /tmp/${{env.wykbin}}
         tag: ${{ env.date2 }}
         body: |            
             ☆  源码 : ${{ env.REPO_URL }}
