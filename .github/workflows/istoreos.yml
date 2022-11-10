@@ -1,0 +1,243 @@
+name: 编译lede-wyk
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: '是否发布固件(yes/no)'
+        required: false
+        default: 'yes'
+      ssh:
+        description: '是否开启SSH(yes/no)'
+        required: false
+        default: 'no'
+      kernelconfig:
+        description: '是否配置内核(yes/no,依赖SSH开启)'
+        required: false
+        default: 'no'
+
+
+#定时触发开始编译(开启定时编译请先确认SSH处在关闭状态,要不然SSH没人管,会卡SSH编译失败)
+#  schedule:
+#    - cron: 0 8 */5 * *
+
+
+#点☆Star触发开始编译
+#  watch:
+#    types: started
+
+
+env: 
+  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+  SCKEY: ${{ secrets.SCKEY }}
+  TZ: Asia/Shanghai
+  GITHUB_RELEASE: https://github.com/winyke/openwrt-test/releases
+
+jobs: 
+  build:
+    runs-on: Ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    name: 项目编译： ${{matrix.target}}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [Lede_newifi_d2]
+
+     # [Lede_nanopi_r2s,Lede_newifi_d2,Lede_phicomm_k2p,Lede_phicomm_n1,Lede_redmi_ac2100,Lede_x86_64,Lede_xiaomi_r3pro,Lede_xiaoyu_c5]
+     # [Lienol_phicomm_k2p,Lienol_phicomm_k3,Lienol_x86_64]
+     # [Project_nanopi_r2s,Project_newifi_d2,Project_phicomm_k3,Project_phicomm_n1,Project_x86_64,Project_xiaomi_ac2100,Project_xiaomi_mir3g,Project_xiaoyu_c5]
+
+
+    steps:
+    - name: 准备就绪[发布:${{ github.event.inputs.release }}][SSH:${{ github.event.inputs.ssh }}][配置内核:${{ github.event.inputs.kernelconfig }}]
+      uses: actions/checkout@v2  
+    
+    - name: 引入机型设置(setting.ini)
+      run: |
+        source "${GITHUB_WORKSPACE}/build/${{matrix.target}}/settings.ini"
+        echo "REPO_URL=${REPO_URL}" >> $GITHUB_ENV
+        echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_ENV
+        echo "CONFIG_FILE=${CONFIG_FILE}" >> $GITHUB_ENV
+        echo "WXFB_MESSAGE=${WXFB_MESSAGE}" >> $GITHUB_ENV
+        echo "DIY_P1_SH=${DIY_P1_SH}" >> $GITHUB_ENV
+        echo "DIY_P2_SH=${DIY_P2_SH}" >> $GITHUB_ENV
+        echo "SSH_ACTIONS=${SSH_ACTIONS}" >> $GITHUB_ENV
+        echo "UPLOAD_BIN_DIR=${UPLOAD_BIN_DIR}" >> $GITHUB_ENV
+        echo "UPLOAD_CONFIG=${UPLOAD_CONFIG}" >> $GITHUB_ENV
+        echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV
+        echo "UPLOAD_COWTRANSFER=${UPLOAD_COWTRANSFER}" >> $GITHUB_ENV
+        echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
+        echo "SERVERCHAN_SCKEY=${SERVERCHAN_SCKEY}" >> $GITHUB_ENV
+    
+    - name: 开始安装编译所需系统
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq -y install build-essential asciidoc binutils bzip2 gawk gettext git libc6-dev libncurses5 libtinfo-dev libtinfo5 ncurses-doc libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+    - name: 下载${{matrix.target}}源码
+      working-directory: /workdir
+      run: |
+        git clone -b $REPO_BRANCH --single-branch $REPO_URL openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cd openwrt
+        rm -rf package/ctcgfw/luci-app-argon-config
+        rm -rf package/lienol/luci-app-timecontrol
+        rm -rf package/ctcgfw/luci-theme-argonv3
+        rm -rf package/lean/luci-app-netdata
+        rm -rf package/lean/luci-theme-argon
+        rm -rf package/lean/k3screenctrl
+        
+    - name: 加载源,patch补丁和自定义设置
+      run: |
+        cp -Rf `find ./ -maxdepth 1 -type d ! -path './openwrt' ! -path './'` openwrt
+        cd openwrt
+        if [ -f "build/${{matrix.target}}/$DIY_P1_SH" ]; then
+          chmod +x build/${{matrix.target}}/$DIY_P1_SH
+          /bin/bash "build/${{matrix.target}}/$DIY_P1_SH"
+        fi
+        git clone -b $REPO_BRANCH --single-branch https://github.com/coolsnowwolf/packages package/wolf
+        ./scripts/feeds clean && ./scripts/feeds update -a && ./scripts/feeds install -a
+        if [ -f "build/${{matrix.target}}/$DIY_P2_SH" ]; then
+          chmod +x build/${{matrix.target}}/$DIY_P2_SH
+          /bin/bash "build/${{matrix.target}}/$DIY_P2_SH"
+        fi
+        if [ -n "$(ls -A "build/${{matrix.target}}/patches" 2>/dev/null)" ]; then
+          find "build/${{matrix.target}}/patches" -type f -name '*.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "cat '%'  | patch -d './' -p1 --forward --no-backup-if-mismatch"
+        fi
+        if [ -n "$(ls -A "build/${{matrix.target}}/files" 2>/dev/null)" ]; then
+         cp -rf build/${{matrix.target}}/files files
+         chmod -R 755 build/${{matrix.target}}/files/* ./
+        fi
+        if [ -n "$(ls -A "build/${{matrix.target}}/diy" 2>/dev/null)" ]; then
+         cp -Rf build/${{matrix.target}}/diy/* ./
+        fi
+        [ -e build/${{matrix.target}}/$CONFIG_FILE ]
+        mv build/${{matrix.target}}/$CONFIG_FILE .config
+        make defconfig
+        git clone https://github.com/openwrt-dev/po2lmo.git
+        pushd po2lmo
+        make && sudo make install
+        popd
+    - name: 内核配置
+      if: (env.SSH_ACTIONS == 'true' || github.event.inputs.ssh == 'yes') && github.event.inputs.kernelconfig == 'yes'
+      run: |
+        cd openwrt
+        make kernel_menuconfig
+ 
+    - name: SSH远程连接服务器配置固件
+      uses: garypang13/debugger-action@master
+      if: env.SSH_ACTIONS == 'true' || (github.event.inputs.ssh == 'yes' && github.event.inputs.ssh  != 'false')
+
+    - name: 下载软件包
+      id: package
+      run: |
+        cd openwrt
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+    
+    - name: 开始编译固件
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(($(nproc)+$(nproc))) thread compile"
+        make -j$(($(nproc)+$(nproc))) || make -j1 V=s
+        echo "::set-output name=status::success"
+        echo "date=$(date "+%Y-%m-%d %H.%M")" >> $GITHUB_ENV
+        echo "date1=$(date "+%Y年%m月%d号-%H点%M分")" >> $GITHUB_ENV
+        echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
+        echo "wykbin=${{matrix.target}}$(date "+%Y%m%d-%H%M").tar" >> $GITHUB_ENV
+    - name: 上传bin文件夹(固件+ipk)到github空间
+      uses: actions/upload-artifact@v2
+      if: steps.compile.outputs.status == 'success'
+      with:
+        name: OpenWrt_bin_${{matrix.target}}_${{ env.date }}
+        path: openwrt/bin
+
+    - name: 整理固件文件夹
+      id: organizer
+      run: |
+        tar -cf /tmp/${wykbin} openwrt/bin
+        mkdir config
+        find openwrt/bin/targets/ -name "*config.buildinfo*" | xargs -i mv -f {} config
+        cd openwrt/bin/targets/*/*
+        rm -rf packages && mkdir packages
+        find -name "*buildinfo*" | xargs -i mv -f {} packages
+        find -name "*sha256sums*" | xargs -i mv -f {} packages
+        find -name "*kernel.bin*" | xargs -i mv -f {} packages
+        find -name "*kernel1.bin*" | xargs -i mv -f {} packages
+        find -name "*manifest*" | xargs -i mv -f {} packages
+        find -name "*vmlinuz*" | xargs -i mv -f {} packages
+        find -name "*esxi.vmdk*" | xargs -i mv -f {} packages
+        find -name "*Image*" | xargs -i mv -f {} packages
+        find -name "*rootfs-squashfs*" | xargs -i mv -f {} packages
+        find -name "*squashfs-rootfs*" | xargs -i mv -f {} packages
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+    
+    - name: 上传.config配置文件到github空间
+      uses: actions/upload-artifact@v2
+      if: steps.organizer.outputs.status == 'success'
+      with:
+        name: .config_${{matrix.target}}_${{ env.date }}
+        path: ./config
+
+    - name: 上传bin文件夹(固件+ipk)压缩包到「奶牛快传」和「WeTransfer」
+      if: steps.organizer.outputs.status == 'success'
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/${wykbin} 2>&1 | tee cowtransfer.log
+        echo "::warning file=奶牛快传（${{matrix.target}}）::$(cat cowtransfer.log | grep https)"
+        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+        
+        ./transfer wet -s -p 16 --no-progress /tmp/${wykbin} 2>&1 | tee wetransfer.log
+        echo "::warning file=WeTransfer（${{matrix.target}}）::$(cat wetransfer.log | grep https)"
+        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+    
+    - name: 微信通知
+      uses: emon100/Action-Serverchan@v2
+      if: steps.organizer.outputs.status == 'success' && env.SERVERCHAN_SCKEY == 'true' || (github.event.inputs.wxtz == 'wxtz' && github.event.inputs.wxtz  != 'false')
+      with:
+        SCKEY: ${{ secrets.SCKEY }}
+        text: 恭喜主人${{matrix.target}}固件编译成功！
+        desp: |
+              完成时间：${{ env.date1 }}
+              
+              发布地址：${{ env.GITHUB_RELEASE }}
+              
+              ++++++++++++++固件+ipk++++++++++++++++
+              
+              奶牛快传：
+              
+              ${{ env.COWTRANSFER_BIN_URL }}
+              
+              WeTransfer：
+              
+              ${{ env.WETRANSFER_BIN_URL }}
+    - name: 自动发布固件
+      uses: svenstaro/upload-release-action@v2
+      if: steps.organizer.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' || (github.event.inputs.release == 'yes' && github.event.inputs.release  != 'false')
+      with:
+        repo_token: ${{ secrets.REPO_TOKEN }}
+        release_name: ${{ env.date1 }} 「 ${{ env.WXFB_MESSAGE }} 」固件
+        file: /tmp/${{env.wykbin}}
+        tag: ${{ env.date2 }}
+        body: |            
+            ☆  源码 : ${{ env.REPO_URL }}
+            ☆  分支 : ${{ env.REPO_BRANCH }}
+            ☆  感谢lede源码作者coolsnowwolf无私分享！
+            ☆  感谢281677160、garypang13、p3terx
+            
+            🎉 [ ${{ env.WXFB_MESSAGE }} ]固件+ipk下载 ✨
+            💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}
+            ⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}
+            🌴 链接有效期为7天，无需注册直接下载 🐤
