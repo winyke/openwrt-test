@@ -47,7 +47,7 @@ jobs:
 
     steps:
     - name: 准备就绪[发布:${{ github.event.inputs.release }}][SSH:${{ github.event.inputs.ssh }}][配置内核:${{ github.event.inputs.kernelconfig }}]
-      uses: actions/checkout@v2  
+      uses: actions/checkout@v3
     
     - name: 引入机型设置(setting.ini)
       run: |
