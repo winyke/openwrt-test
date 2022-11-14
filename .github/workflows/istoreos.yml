@@ -1,4 +1,4 @@
-name: 编译lede-wyk
+name: 编译istoreos-wyk
 
 on:
   workflow_dispatch:
