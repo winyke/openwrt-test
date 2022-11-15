@@ -98,9 +98,6 @@ jobs:
         ./scripts/feeds clean && ./scripts/feeds update -a && ./scripts/feeds install -a
         [ -e build/${{matrix.target}}/$CONFIG_FILE ]
         mv build/${{matrix.target}}/$CONFIG_FILE .config
-        make defconfig
-        git clone https://github.com/openwrt-dev/po2lmo.git
-        pushd po2lmo
         make && sudo make install
         popd
     - name: 内核配置
