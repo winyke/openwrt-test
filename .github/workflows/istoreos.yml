@@ -117,7 +117,7 @@ jobs:
       id: package
       run: |
         cd openwrt
-        make download -j1 V=s PKG_HASH=skip
+        make download -j8 PKG_HASH=skip
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
     
@@ -126,7 +126,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(($(nproc)+$(nproc))) thread compile"
-        make -j$(($(nproc)+$(nproc))) || make -j1 V=s
+        make -j$(($(nproc)+$(nproc))) PKG_HASH=skip || make -j1 V=s PKG_HASH=skip
         echo "::set-output name=status::success"
         echo "date=$(date "+%Y-%m-%d %H.%M")" >> $GITHUB_ENV
         echo "date1=$(date "+%Y年%m月%d号-%H点%M分")" >> $GITHUB_ENV
