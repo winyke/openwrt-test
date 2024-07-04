@@ -1,6 +1,5 @@
-# openwrt-test
+# just test for myself ,so DO NOT copy this git.
 
->> just test for myself ,so DO NOT copy this git.
 copy from https://github.com/281677160/build-openwrt
 
 官方正版Openwrt：https://github.com/openwrt/openwrt
