@@ -16,7 +16,7 @@ on:
         default: 'linux/arm64'
 
 jobs:
-  将Docker镜像打包下载:
+  export and share docker image:
     runs-on: ubuntu-latest
     
     steps:
