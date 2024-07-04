@@ -16,7 +16,7 @@ on:
         default: 'linux/arm64'
 
 jobs:
-  export-and-share:
+  将Docker镜像打包下载:
     runs-on: ubuntu-latest
     
     steps:
@@ -42,11 +42,13 @@ jobs:
         docker save -o "$filename" ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
 
         # Save filename to GITHUB_ENV for later steps to use
+        echo "$filename"
         echo "FILENAME=$filename" >> $GITHUB_ENV
 
     - name: Upload to WeTransfer
       id: upload
       run: |
+        echo "${{ env.FILENAME }}"
         curl -fsSL git.io/file-transfer | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress "${{ env.FILENAME }}" 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
