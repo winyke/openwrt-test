@@ -35,19 +35,25 @@ jobs:
     
     - name: Export Docker Image
       run: |
-        docker save -o image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+        # Constructing the filename in the format architecture_author_image_tag.tar
+        safe_image_name="$(echo ${{ github.event.inputs.image_name }} | tr '/' '_')"
+        filename="${{ github.event.inputs.platform }}_${safe_image_name}_${github.event.inputs.image_tag}.tar"
+        docker save -o "$filename" ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+
+        # Save filename to GITHUB_ENV for later steps to use
+        echo "FILENAME=$filename" >> $GITHUB_ENV
 
     - name: Upload to WeTransfer
       id: upload
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress image.tar 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress "${{ env.FILENAME }}" 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
-        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
         
-        ./transfer wet -s -p 16 --no-progress image.tar 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress "${{ env.FILENAME }}" 2>&1 | tee wetransfer.log
         echo "::warning file=WeTransfer::$(cat wetransfer.log | grep https)"
-        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
 
     - name: Display WeTransfer Link
       if: success()
