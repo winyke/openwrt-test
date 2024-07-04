@@ -38,19 +38,23 @@ jobs:
         docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
         echo "当前目录是: $(pwd)"
+    - name: 自动发布
+      uses: actions/upload-artifact@v4
+      id: artifact-upload-step
+      with:
+        name: my-artifact
+        path: /tmp/image.tar
+        compression-level: 0 # no compression
 
-    - name: 上传bin文件夹(固件+ipk)压缩包到「奶牛快传」和「WeTransfer」
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/image.tar 2>&1 | tee cowtransfer.log
-        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
-        ./transfer wet -s -p 16 --no-progress /tmp/image.tar 2>&1 | tee wetransfer.log
-        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV   
-    - name: Display WeTransfer Link
-      if: success()
-      run: |
-        echo "💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}"
-        echo "⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}"
+    - name: Output artifact ID
+      run:  echo 'Artifact url is ${{ steps.artifact-upload-step.outputs.artifact-url }}'
+      
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        retain_days: 0
+        keep_minimum_runs: 2
+        
     - name: 自动发布
       uses: ncipollo/release-action@main
       with:
@@ -65,8 +69,3 @@ jobs:
             镜像：${{ github.event.inputs.image_name }}
             标签：${{ github.event.inputs.image_tag }}
         artifacts: "/tmp/image.tar"
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 2
