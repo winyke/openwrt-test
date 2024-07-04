@@ -38,7 +38,7 @@ jobs:
         docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
-    - name: 自动发布固件
+    - name: 自动发布
       uses: ncipollo/release-action@main
       with:
         name: ❤️ ${{ github.event.inputs.image_name }} 
