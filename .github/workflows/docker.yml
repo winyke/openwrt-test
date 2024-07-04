@@ -41,11 +41,11 @@ jobs:
       id: upload
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress "image.tar" 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress image.tar 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
         echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
         
-        ./transfer wet -s -p 16 --no-progress "image.tar" 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress image.tar 2>&1 | tee wetransfer.log
         echo "::warning file=WeTransfer::$(cat wetransfer.log | grep https)"
         echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
 
