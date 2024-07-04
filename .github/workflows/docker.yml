@@ -37,18 +37,20 @@ jobs:
       run: |
         docker save -o image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
 
-    - name: Install WeTransfer CLI
-      run: |
-        curl -Ls https://github.com/we-transfer/cli/releases/latest/download/wt-linux-amd64 -o /usr/local/bin/wt
-        chmod +x /usr/local/bin/wt
-
     - name: Upload to WeTransfer
       id: upload
       run: |
-        wt_result=$(wt upload image.tar --link)
-        echo "transfer_link=$(echo "$wt_result" | grep -o 'https://we.tl/t-[A-Za-z0-9]*')" >> $GITHUB_ENV  # 提取并输出分享链接
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress image.tar 2>&1 | tee cowtransfer.log
+        echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
+        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
+        
+        ./transfer wet -s -p 16 --no-progress image.tar 2>&1 | tee wetransfer.log
+        echo "::warning file=WeTransfer::$(cat wetransfer.log | grep https)"
+        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
 
     - name: Display WeTransfer Link
       if: success()
       run: |
-        echo "The WeTransfer link to download your image is ${{ env.transfer_link }}"
+        echo "💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}"
+        echo "⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}"
