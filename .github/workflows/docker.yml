@@ -28,6 +28,6 @@ jobs:
       run: |
         echo "当前目录是: $(pwd)"
         safe_image_name="$(echo ${{ github.event.inputs.image_name }} | tr '/' '_')"
-        safe_platform="$(echo ${{ github.event.inputs.platform }} | tr '/' '_')"
+        safe_plat="$(echo ${{ github.event.inputs.platform }} | tr '/' '_')"
         filename="${{safe_platform}}_${{safe_image_name}}_${{github.event.inputs.image_tag}}.tar"
         echo $filename
