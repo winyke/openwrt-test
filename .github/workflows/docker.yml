@@ -14,6 +14,10 @@ on:
         description: 'Docker image platform (e.g., linux/amd64, linux/arm64)'
         required: true
         default: 'linux/arm64'
+      compression-level:
+        description: 'The level of compression for Zlib to be applied to the artifact archive.\nThe value can range from 0 to 9.'
+        required: true
+        default: '0'
 
 jobs:
   export-and-share-docker-image:
@@ -50,7 +54,7 @@ jobs:
       with:
         name: ${{env.filename}}
         path: /tmp/${{env.filename}}
-        compression-level: 0 # no compression
+        compression-level: ${{ github.event.inputs.compression-level }} # 0 no compression
 
     - name: 下载地址
       run:  echo 'Artifact url is ${{ steps.artifact-upload-step.outputs.artifact-url }}'
