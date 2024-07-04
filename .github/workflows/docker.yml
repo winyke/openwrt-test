@@ -39,13 +39,13 @@ jobs:
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
     - name: 自动发布固件
-      uses: ncipollo/release-action@v1
+      uses: ncipollo/release-action@main
       with:
         name: ❤️ ${{ github.event.inputs.image_name }} 
         allowUpdates: true
         tag: ${{ env.date2 }}
         commit: main
-        token: ${{secrets.REPO_TOKEN}}
+        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           镜像简介：
             架构：${{ github.event.inputs.platform }}
