@@ -35,20 +35,11 @@ jobs:
     
     - name: Export Docker Image
       run: |
-        # Constructing the filename in the format architecture_author_image_tag.tar
-        # safe_image_name="$(echo ${{ github.event.inputs.image_name }} | tr '/' '_')"
-        # safe_platform="$(echo ${{ github.event.inputs.platform }} | tr '/' '_')"
-        # filename="${{safe_platform}}_${{safe_image_name}}_${{github.event.inputs.image_tag}}.tar"
-        # docker save -o "$filename" ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         docker save -o image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
-        # Save filename to GITHUB_ENV for later steps to use
-        # echo $filename
-        # echo "FILENAME=$filename" >> $GITHUB_ENV
 
     - name: Upload to WeTransfer
       id: upload
       run: |
-        # echo "${{ env.FILENAME }}"
         curl -fsSL git.io/file-transfer | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress "image.tar" 2>&1 | tee cowtransfer.log
         echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
