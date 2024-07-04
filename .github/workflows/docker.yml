@@ -42,10 +42,9 @@ jobs:
     - name: 上传bin文件夹(固件+ipk)压缩包到「奶牛快传」和「WeTransfer」
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/ipk.tar 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress /tmp/image.tar 2>&1 | tee cowtransfer.log
         echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress /tmp/ipk.tar 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress /tmp/image.tar 2>&1 | tee wetransfer.log
         echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV   
     - name: Display WeTransfer Link
       if: success()
