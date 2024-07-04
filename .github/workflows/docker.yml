@@ -39,15 +39,8 @@ jobs:
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
     - name: 自动发布固件
-      uses: svenstaro/upload-release-action@v2
+      uses: Shopify/upload-to-release@v2.0.0
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
-        release_name: ${{ github.event.inputs.platform }}_${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
-        file: /tmp/image.tar
-        tag: ${{ env.date2 }}
-        body: |            
-            ☆  
-            🎉  ✨
-            💐 奶牛快传(国内高速🚀下载)：
-            ⛄ WeTransfer(国外高速🚀下载)： 
-            🌴  🐤
+        name: ${{ github.event.inputs.platform }}_${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+        path: /tmp/image.tar
