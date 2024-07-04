@@ -39,8 +39,16 @@ jobs:
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
     - name: 自动发布固件
-      uses: Shopify/upload-to-release@v2.0.0
+      uses: ncipollo/release-action@v1
       with:
-        repo_token: ${{ secrets.REPO_TOKEN }}
-        name: ${{ github.event.inputs.platform }}_${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
-        path: /tmp/image.tar
+        name: ❤️ ${{ github.event.inputs.image_name }} 
+        allowUpdates: true
+        tag: ${{ env.date2 }}
+        commit: main
+        token: ${{secrets.REPO_TOKEN}}
+        body: |
+          镜像简介：
+            架构：${{ github.event.inputs.platform }}
+            镜像：${{ github.event.inputs.image_name }}
+            标签：${{ github.event.inputs.image_tag }}
+        artifacts: "/tmp/image.tar"
