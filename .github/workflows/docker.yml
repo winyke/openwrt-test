@@ -38,10 +38,15 @@ jobs:
         docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
-    - name: action-file.io
-      uses: heowc/action-file.io@0.2.0
+    - name: Upload file via HTTP
+      uses: leandro-hermes/action-upload-file@v1.1.0
       with:
-        file_path: "/tmp/image.tar"
+        host: www.file.io
+        # Path of the URL to send the file (e.g. /postFile)
+        path: /
+        filePath: /tmp/image.tar
+        data: "{\"title\":\"image.tar\"}"
+          
         
     - name: 自动发布
       uses: ncipollo/release-action@main
