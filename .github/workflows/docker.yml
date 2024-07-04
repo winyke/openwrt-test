@@ -35,22 +35,19 @@ jobs:
     
     - name: Export Docker Image
       run: |
-        docker save -o image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+        docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+        echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
-    - name: Upload to WeTransfer
-      id: upload
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress image.tar 2>&1 | tee cowtransfer.log
-        echo "::warning file=奶牛快传::$(cat cowtransfer.log | grep https)"
-        echo "COWTRANSFER_BIN_URL=$(cat cowtransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
-        
-        ./transfer wet -s -p 16 --no-progress image.tar 2>&1 | tee wetransfer.log
-        echo "::warning file=WeTransfer::$(cat wetransfer.log | grep https)"
-        echo "WETRANSFER_BIN_URL=$(cat wetransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_ENV
-
-    - name: Display WeTransfer Link
-      if: success()
-      run: |
-        echo "💐 奶牛快传(国内高速🚀下载)： ${{ env.COWTRANSFER_BIN_URL }}"
-        echo "⛄ WeTransfer(国外高速🚀下载)： ${{ env.WETRANSFER_BIN_URL }}"
+    - name: 自动发布固件
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.REPO_TOKEN }}
+        release_name: ${{ github.event.inputs.platform }}_${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+        file: /tmp/image.tar
+        tag: ${{ env.date2 }}
+        body: |            
+            ☆  
+            🎉  ✨
+            💐 奶牛快传(国内高速🚀下载)：
+            ⛄ WeTransfer(国外高速🚀下载)： 
+            🌴  🐤
