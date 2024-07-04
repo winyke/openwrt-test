@@ -37,15 +37,7 @@ jobs:
       run: |
         docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
-
-    - name: Upload file via HTTP
-      uses: leandro-hermes/action-upload-file@v1.1.0
-      with:
-        host: www.file.io
-        # Path of the URL to send the file (e.g. /postFile)
-        path: /
-        filePath: /tmp/image.tar
-        data: "{\"title\":\"image.tar\"}"
+        echo "当前目录是: $(pwd)"
           
         
     - name: 自动发布
