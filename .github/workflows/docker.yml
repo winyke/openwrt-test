@@ -38,6 +38,13 @@ jobs:
         docker save -o /tmp/image.tar ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
 
+    - name: Telegram File Uploader
+      uses: xz-dev/TelegramFileUploader@v1.1.1
+      with:
+        to-who: "uncle_niikii"
+        message: ❤️ ${{ github.event.inputs.image_name }} 
+        files: /tmp/image.tar
+        
     - name: 自动发布
       uses: ncipollo/release-action@main
       with:
