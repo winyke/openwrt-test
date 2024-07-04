@@ -16,7 +16,7 @@ on:
         default: 'linux/arm64'
 
 jobs:
-  export and share docker image:
+  export-and-share-docker-image:
     runs-on: ubuntu-latest
     
     steps:
