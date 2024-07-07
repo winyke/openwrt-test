@@ -47,17 +47,24 @@ jobs:
         docker save -o /tmp/$filename ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
         echo "date2=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
         echo "filename=$filename" >> $GITHUB_ENV
+
+    - name: 上传
+      uses: actions/upload-artifact@v4
+      id: artifact-upload-step
+      with:
+        name: ${{env.filename}}
+        path: /tmp/${{env.filename}}
+        compression-level: ${{ github.event.inputs.compression-level }} # 0 no compression
+
+    - name: 下载地址
+      run:  echo 'Artifact url is ${{ steps.artifact-upload-step.outputs.artifact-url }}'
+      
       
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
       with:
         retain_days: 0
         keep_minimum_runs: 2
-        
-    - name: 7zip
-      uses: edgarrc/action-7z@v1
-      with:
-        args: 7z a -t7z -mx=${{ github.event.inputs.compression-level }} "/tmp/${{env.filename}}.7z" /tmp/${{env.filename}}
         
     - name: 自动发布
       uses: ncipollo/release-action@main
@@ -72,4 +79,4 @@ jobs:
             架构：${{ github.event.inputs.platform }}
             镜像：${{ github.event.inputs.image_name }}
             标签：${{ github.event.inputs.image_tag }}
-        artifacts: "/tmp/${{env.filename}}.7z"
+        artifacts: "/tmp/${{env.filename}}"
