@@ -25,14 +25,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        node-version: '20.x'
+      uses: actions/checkout@v4.2.2
       
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      with:
-        node-version: '20.x'
+      uses: docker/setup-buildx-action@v3.8.0
       
     - name: Pull Docker Image
       run: docker pull --platform=${{ github.event.inputs.platform }} ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
@@ -55,9 +51,6 @@ jobs:
         name: ${{env.filename}}
         path: /tmp/${{env.filename}}
         compression-level: ${{ github.event.inputs.compression-level }} # 0 no compression
-
-    - name: 下载地址
-      run:  echo 'Artifact url is ${{ steps.artifact-upload-step.outputs.artifact-url }}'
       
       
     - name: Delete workflow runs
@@ -79,4 +72,5 @@ jobs:
             架构：${{ github.event.inputs.platform }}
             镜像：${{ github.event.inputs.image_name }}
             标签：${{ github.event.inputs.image_tag }}
+            下载地址：${{ steps.artifact-upload-step.outputs.artifact-url }}
         artifacts: "/tmp/${{env.filename}}"
